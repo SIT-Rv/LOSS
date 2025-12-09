@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Landslide Outburst Surveillance System</title>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- jsPDF + AutoTable for PDF Export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: url('bckgrnd.jpeg') no-repeat center center fixed;
+      background-size: cover;
+      color: #333;
+    }
+
+    header {
+      background-color: rgba(44, 62, 80, 0.85);
+      color: #fff;
+      padding: 1em 0;
+      text-align: center;
+    }
+
+    nav {
+      background-color: rgba(52, 73, 94, 0.85);
+      color: #fff;
+      padding: 0.5em 0;
+      text-align: center;
+    }
+
+    nav a {
+      color: #fff;
+      text-decoration: none;
+      padding: 0.5em 1em;
+      margin: 0 0.5em;
+      cursor: pointer;
+    }
+
+    nav a:hover {
+      background-color: rgba(44, 62, 80, 0.9);
+    }
+
+    .hero {
+      background-color: rgba(0, 0, 0, 0.4);
+      text-align: center;
+      color: #fff;
+      padding: 100px 0;
+      margin-bottom: 20px;
+    }
+
+    .hero h1 {
+      font-size: 3em;
+      margin-bottom: 10px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.6);
+    }
+
+    .hero p {
+      font-size: 1.2em;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.6);
+    }
+
+    .container {
+      width: 80%;
+      margin: auto;
+      overflow: hidden;
+      padding: 20px 0;
+    }
+
+    .section {
+      display: none; /* hide all sections by default */
+      background-color: rgba(255, 255, 255, 0.9);
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .section.active {
+      display: block; /* show only active section */
+    }
+
+    .section h2 {
+      color: #2c3e50;
+      border-bottom: 2px solid #2c3e50;
+      padding-bottom: 10px;
+      margin-bottom: 20px;
+    }
+
+    .data-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    .data-card {
+      background-color: #ecf0f1;
+      padding: 15px;
+      border-radius: 5px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .data-card h3 {
+      color: #34495e;
+      margin-top: 0;
+    }
+
+    footer {
+      background-color: rgba(44, 62, 80, 0.85);
+      color: #fff;
+      text-align: center;
+      padding: 1em 0;
+      margin-top: 20px;
+    }
+
+    .chart-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 25px;
+      margin-top: 30px;
+    }
+
+    .chart-card {
+      background: white;
+      border-radius: 10px;
+      padding: 15px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    .chart-title {
+      font-weight: 600;
+      margin-bottom: 10px;
+      text-align: center;
+      color: #111827;
+    }
+
+    canvas {
+      height: 200px !important;
+    }
+
+    .timestamp {
+      text-align: right;
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 10px;
+    }
+
+    .weather-update {
+      background-color: rgba(173, 216, 230, 0.3);
+      padding: 8px;
+      border-left: 4px solid #0077b6;
+      margin-bottom: 5px;
+      border-radius: 4px;
+    }
+
+    /* LOSS About Section */
+    .about-container {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 20px;
+      background-color: rgba(255, 255, 255, 0.9);
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      margin-top: 25px;
+    }
+
+    .loss-logo {
+      width: 180px;
+      height: auto;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+
+    .about-container p {
+      flex: 1;
+      font-size: 1.05em;
+      line-height: 1.6;
+      color: #333;
+    }
+
+    /* Reports Section Styling */
+    #reports {
+      margin-top: 30px;
+    }
+
+    .reports-container {
+      background-color: rgba(255, 255, 255, 0.95);
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      overflow-x: auto;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    #reports-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.95em;
+    }
+
+    #reports-table th, #reports-table td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: center;
+    }
+
+    #reports-table th {
+      background-color: #007bff;
+      color: white;
+      position: sticky;
+      top: 0;
+    }
+
+    .status-ok { color: green; font-weight: bold; }
+    .status-warning { color: orange; font-weight: bold; }
+    .status-error { color: red; font-weight: bold; }
+
+    /* Download Button */
+    .download-btn {
+      display: inline-block;
+      background-color: #007bff;
+      color: #fff;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .download-btn:hover {
+      background-color: #0056b3;
+    }
+
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Landslide Outburst Surveillance System</h1>
+    <p>Real-time Monitoring & Alerting</p>
+  </header>
+
+  <nav>
+    <a data-target="dashboard">Dashboard</a>
+    <a data-target="sensors">Sensor Data</a>
+    <a data-target="alerts">Alerts</a>
+    <a data-target="reports">Reports</a>
+    <a data-target="map">Map View</a>
+    <a data-target="about">About Us</a>
+  </nav>
+
+  <div class="hero">
+    <h1>Ensuring Safety Through Advanced Monitoring</h1>
+    <p>Detecting and predicting landslide events to protect communities.</p>
+  </div>
+
+  <div class="container">
+    <!-- Dashboard Section -->
+    <section id="dashboard" class="section active">
+      <h2>System Dashboard</h2>
+      <p>Overview of the current system status and critical metrics.</p>
+
+      <div class="data-grid">
+        <div class="data-card">
+          <h3>Overall Status</h3>
+          <p style="color: green; font-weight: bold;">ALL SYSTEMS NORMAL</p>
+        </div>
+        <div class="data-card">
+          <h3>Active Sensors</h3>
+          <p>128 / 130 Online</p>
+        </div>
+        <div class="data-card">
+          <h3>Recent Alerts</h3>
+          <p>Last 24h: 0 Minor, 0 Major</p>
+        </div>
+        <div class="data-card">
+          <h3>Data Streams</h3>
+          <p>Receiving from all active zones.</p>
+        </div>
+      </div>
+
+      <div class="timestamp" id="liveTime">Loading...</div>
+
+      <div class="chart-grid">
+        <div class="chart-card">
+          <div class="chart-title">T&H DHT11 Sensor (°C)</div>
+          <canvas id="piezometerChart"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Soil Moisture Sensor (%)</div>
+          <canvas id="moistureChart"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Slope Angle Sensor (°)</div>
+          <canvas id="slopeChart"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Rainfall Range Sensor (mm/hr)</div>
+          <canvas id="rainfallChart"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Vibration Sensor (m/s²)</div>
+          <canvas id="vibrationChart"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Ground Displacement Sensor (mm)</div>
+          <canvas id="displacementChart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Sensor Data Section -->
+    <section id="sensors" class="section">
+      <h2>Sensor Data</h2>
+      <p>Detailed readings from individual sensors across monitored regions.</p>
+      <div class="data-grid">
+        <div class="data-card">
+          <h3>Sensor ID: LSS-001</h3>
+          <p>Location: Zone A, Sector 1</p>
+          <p>Status: Online</p>
+          <p>Displacement: 0.5 mm</p>
+          <p>Rainfall: 2.1 mm/hr</p>
+        </div>
+        <div class="data-card">
+          <h3>Sensor ID: LSS-002</h3>
+          <p>Location: Zone B, Sector 3</p>
+          <p>Status: Online</p>
+          <p>Displacement: 0.8 mm</p>
+          <p>Rainfall: 1.5 mm/hr</p>
+        </div>
+        <div class="data-card">
+          <h3>Sensor ID: LSS-003</h3>
+          <p>Location: Zone A, Sector 2</p>
+          <p>Status: Online</p>
+          <p>Displacement: 0.6 mm</p>
+          <p>Rainfall: 2.5 mm/hr</p>
+        </div>
+        <div class="data-card">
+          <h3>Sensor ID: LSS-004</h3>
+          <p>Location: Zone C, Sector 1</p>
+          <p>Status: Offline (Last 2 hours)</p>
+          <p>Displacement: 0.4 mm</p>
+          <p>Rainfall: 0.9 mm/hr</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Alerts Section -->
+    <section id="alerts" class="section">
+      <h2>Recent Alerts & Notifications</h2>
+      <p><strong>Location:</strong> Wayanad</p>
+      <p id="alertTime" style="color:#666; font-size:14px;">Loading current time...</p>
+      <ul id="alertList">
+        <li><strong>[2025-10-27 10:30 UTC]</strong> <span style="color: blue;">INFO:</span> Sensor LSS-004 reported offline. Investigation initiated.</li>
+        <li><strong>[2025-10-26 18:15 UTC]</strong> <span style="color: green;">INFO:</span> All sensors in Zone A reporting stable conditions.</li>
+        <li><strong>[2025-10-26 09:00 UTC]</strong> <span style="color: orange;">WARNING:</span> Heavy rainfall expected in Zone B over next 12 hours.</li>
+      </ul>
+    </section>
+
+    <!-- ✅ Reports Section Added -->
+    <section id="reports" class="section">
+      <h2>Reports</h2>
+      <button class="download-btn" id="downloadPDF">Download PDF</button>
+
+      <div class="reports-container">
+        <table id="reports-table">
+          <thead>
+            <tr>
+              <th>Timestamp (UTC)</th>
+              <th>Sensor ID</th>
+              <th>Zone</th>
+              <th>Parameter</th>
+              <th>Value</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="reports-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Map Section -->
+    <section id="map" class="section">
+      <h2>Interactive Map View</h2>
+      <video controls autoplay muted loop 
+             style="width: 100%; max-width: 850px; height: auto; border: 2px solid #ccc; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); background-color: #000;">
+        <source src="vdo.mp4" type="video/mp4">
+        Your browser does not support the video tag.
+      </video>
+      <p style="margin-top: 15px; color: #555;">
+        (Demonstration video replacing interactive map placeholder)
+      </p>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="section">
+      <h2>About the System</h2>
+      <p>Our system uses advanced IoT sensors, real-time analytics, and predictive models to detect landslide-prone conditions, issue alerts, and ensure safety of vulnerable regions.</p>
+      <ul>
+        <li>High-precision displacement sensors</li>
+        <li>Real-time rainfall and soil monitoring</li>
+        <li>Automated alert generation</li>
+        <li>Web-based live dashboard</li>
+        <li>Historical data logging</li>
+      </ul>
+
+      <div class="about-container">
+        <img src="LOSS LOGO.jpeg" alt="LOSS Logo" class="loss-logo">
+        <p>
+          <strong>LOSS</strong> (Landslide Outburst Surveillance System) aims to develop an advanced early warning system 
+          designed to predict landslides and deliver real-time alerts to vulnerable communities and authorities. 
+          By integrating specialized sensors and employing data analytics, the system continuously assesses 
+          environmental conditions conducive to landslides and issues early warnings through multiple communication 
+          channels—such as sirens, SMS alerts, and control center dashboards. 
+          The Internet of Things (IoT) backbone ensures seamless data transmission between field sensors and 
+          monitoring stations, while advanced signal configurations enhance detection accuracy and reliability.
+        </p>
+      </div>
+    </section>
+  </div>
+
+  <footer>
+    <p>&copy; 2025 Landslide Outburst Surveillance System. All rights reserved.</p>
+  </footer>
+
+  <script>
+    // Nav link handling for single-section view
+    const sections = document.querySelectorAll('.section');
+    const navLinks = document.querySelectorAll('nav a');
+
+    navLinks.forEach(link => {
+      link.addEventListener('click', e => {
+        e.preventDefault();
+        const targetId = link.getAttribute('data-target');
+        sections.forEach(sec => sec.classList.remove('active'));
+        document.getElementById(targetId).classList.add('active');
+      });
+    });
+
+    // Dashboard charts & updates
+    function getTimeLabel() {
+      const now = new Date();
+      document.getElementById('liveTime').textContent = "Last Updated: " + now.toLocaleString();
+      return now.toLocaleTimeString();
+    }
+
+    function getRandom(min, max) {
+      return +(Math.random() * (max - min) + min).toFixed(2);
+    }
+
+    function createChart(ctx, color) {
+      return new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [{
+            borderColor: color,
+            backgroundColor: color + '22',
+            data: [],
+            fill: true,
+            tension: 0.3
+          }]
+        },
+        options: {
+          animation: false,
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: { x: { display: false }, y: { beginAtZero: true } }
+        }
+      });
+    }
+
+    const piezometerChart = createChart(document.getElementById('piezometerChart'), '#2563eb');
+    const moistureChart = createChart(document.getElementById('moistureChart'), '#16a34a');
+    const slopeChart = createChart(document.getElementById('slopeChart'), '#f59e0b');
+    const rainfallChart = createChart(document.getElementById('rainfallChart'), '#0ea5e9');
+    const vibrationChart = createChart(document.getElementById('vibrationChart'), '#dc2626');
+    const displacementChart = createChart(document.getElementById('displacementChart'), '#9333ea');
+
+    function updateChart(chart, value) {
+      const label = getTimeLabel();
+      if (chart.data.labels.length >= 10) {
+        chart.data.labels.shift();
+        chart.data.datasets[0].data.shift();
+      }
+      chart.data.labels.push(label);
+      chart.data.datasets[0].data.push(value);
+      chart.update();
+    }
+
+    function updateAllCharts() {
+      updateChart(piezometerChart, getRandom(22, 28)); // Temperature
+      updateChart(moistureChart, getRandom(10, 80));
+      updateChart(slopeChart, getRandom(20, 45));
+      updateChart(rainfallChart, getRandom(0, 100));
+      updateChart(vibrationChart, getRandom(0, 5));
+      updateChart(displacementChart, getRandom(0, 50));
+    }
+
+    // Weather & alert updates
+    function updateAlertSection() {
+      const now = new Date();
+      document.getElementById('alertTime').textContent =
+        "Last Update: " + now.toLocaleString();
+
+      const temperature = (22 + Math.random() * 4).toFixed(1);
+      const humidity = (70 + Math.random() * 10).toFixed(0);
+      const rainfall = (Math.random() * 15).toFixed(1);
+
+      const weatherAlert = `
+        <li class="weather-update"><strong>[${now.toLocaleString()}]</strong>
+        <span style="color: teal;">WEATHER UPDATE:</span>
+        Temperature: ${temperature}°C, Humidity: ${humidity}%, Rainfall: ${rainfall} mm/hr (Wayanad Station)</li>
+      `;
+
+      const alertList = document.getElementById('alertList');
+      alertList.insertAdjacentHTML('afterbegin', weatherAlert);
+
+      if (alertList.children.length > 6) {
+        alertList.removeChild(alertList.lastElementChild);
+      }
+    }
+
+    updateAllCharts();
+    setInterval(updateAllCharts, 10000);
+    updateAlertSection();
+    setInterval(updateAlertSection, 15000);
+
+    // ✅ Reports Section Functionality
+    const reportsBody = document.getElementById('reports-body');
+
+    function generateSensorData() {
+      const sensors = ["LSS-001", "LSS-002", "LSS-003", "LSS-004"];
+      const zones = ["Zone A", "Zone B", "Zone C"];
+      const parameters = ["Soil Moisture", "Rainfall", "Vibration", "Tilt"];
+      const statusTypes = ["OK", "WARNING", "ERROR"];
+
+      const sensor = sensors[Math.floor(Math.random() * sensors.length)];
+      const zone = zones[Math.floor(Math.random() * zones.length)];
+      const parameter = parameters[Math.floor(Math.random() * parameters.length)];
+      const value = (Math.random() * 100).toFixed(2);
+      const status = statusTypes[Math.floor(Math.random() * statusTypes.length)];
+      const timestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${timestamp}</td>
+        <td>${sensor}</td>
+        <td>${zone}</td>
+        <td>${parameter}</td>
+        <td>${value}</td>
+        <td class="status-${status.toLowerCase()}">${status}</td>
+      `;
+      reportsBody.prepend(row);
+      if (reportsBody.children.length > 50) reportsBody.removeChild(reportsBody.lastChild);
+    }
+
+    for (let i = 0; i < 5; i++) generateSensorData();
+    setInterval(generateSensorData, 5000);
+
+    document.getElementById('downloadPDF').addEventListener('click', () => {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      doc.setFontSize(16);
+      doc.text("Landslide Outburst Surveillance System - Reports", 14, 15);
+      doc.setFontSize(10);
+      doc.text("Generated on: " + new Date().toLocaleString(), 14, 22);
+
+      doc.autoTable({
+        startY: 28,
+        html: '#reports-table',
+        styles: { fontSize: 9, cellPadding: 3 },
+        headStyles: { fillColor: [0, 123, 255] },
+        theme: 'striped'
+      });
+
+      doc.save('LOSS_Reports.pdf');
+    });
+  </script>
+</body>
+</html>
