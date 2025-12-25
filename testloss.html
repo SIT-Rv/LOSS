@@ -256,6 +256,7 @@
     <a data-target="alerts">Alerts</a>
     <a data-target="reports">Reports</a>
     <a data-target="map">Map View</a>
+    <a data-target="weather">Weather</a>
     <a data-target="about">About Us</a>
   </nav>
 
@@ -390,17 +391,113 @@
     </section>
 
     <!-- Map Section -->
-    <section id="map" class="section">
-      <h2>Interactive Map View</h2>
-      <video controls autoplay muted loop 
-             style="width: 100%; max-width: 850px; height: auto; border: 2px solid #ccc; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); background-color: #000;">
-        <source src="vdo.mp4" type="video/mp4">
-        Your browser does not support the video tag.
-      </video>
-      <p style="margin-top: 15px; color: #555;">
-        (Demonstration video replacing interactive map placeholder)
-      </p>
-    </section>
+<section id="map" class="section">
+  <h2>Interactive Map View</h2>
+
+  <!-- Map Container -->
+  <div id="mapContainer"
+       style="width: 100%;
+              max-width: 850px;
+              height: 450px;
+              margin: auto;
+              border: 2px solid #ccc;
+              border-radius: 10px;
+              box-shadow: 0 4px 10px rgba(0,0,0,0.15);">
+  </div>
+
+  <p style="margin-top: 15px; color: #555;">
+    Live interactive map centered on Wayanad district
+  </p>
+</section>
+
+<!-- Leaflet CSS -->
+<link rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+  const wayanadLatLng = [11.7152, 76.1320];
+  let map; // 👈 make map global
+
+  function initMap() {
+    if (map) return; // prevent re-init
+
+    map = L.map('mapContainer').setView(wayanadLatLng, 10);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    L.marker(wayanadLatLng)
+      .addTo(map)
+      .bindPopup('<b>Wayanad District</b><br>Kerala, India');
+  }
+</script>
+
+
+    <!-- Weather Section-->
+     <section id="weather" class="section">
+  <h2>Live Weather Conditions</h2>
+
+  <div class="data-grid">
+    <div class="data-card">
+      <h3>Temperature</h3>
+      <p id="temp">-- °C</p>
+    </div>
+
+    <div class="data-card">
+      <h3>Humidity</h3>
+      <p id="humidity">-- %</p>
+    </div>
+
+    <div class="data-card">
+      <h3>Rainfall</h3>
+      <p id="rain">-- mm</p>
+    </div>
+
+    <div class="data-card">
+      <h3>Weather</h3>
+      <p id="condition">--</p>
+    </div>
+  </div>
+</section>
+
+<script>
+  const API_KEY = "7a97670b6ccc03e9cd8c4905dd2a8868";
+  const LAT = 11.7032;   // change if needed
+  const LON = 76.0834;
+
+  async function fetchWeather() {
+    try {
+      const res = await fetch(
+        `https://api.openweathermap.org/data/2.5/weather?lat=${LAT}&lon=${LON}&units=metric&appid=${API_KEY}`
+      );
+      const data = await res.json();
+
+      document.getElementById("temp").innerText =
+        data.main.temp + " °C";
+
+      document.getElementById("humidity").innerText =
+        data.main.humidity + " %";
+
+      document.getElementById("condition").innerText =
+        data.weather[0].description;
+
+      document.getElementById("rain").innerText =
+        data.rain ? data.rain["1h"] : "0 mm";
+
+
+    } catch (err) {
+      console.error("Weather fetch error", err);
+    }
+  }
+
+  fetchWeather();
+  setInterval(fetchWeather, 30000); // update every 30 sec
+</script>
+
 
     <!-- About Section -->
     <section id="about" class="section">
@@ -434,18 +531,29 @@
   </footer>
 
   <script>
-    // Nav link handling for single-section view
-    const sections = document.querySelectorAll('.section');
-    const navLinks = document.querySelectorAll('nav a');
+// Nav link handling for single-section view (FIXED FOR LEAFLET)
+const sections = document.querySelectorAll('.section');
+const navLinks = document.querySelectorAll('nav a');
 
-    navLinks.forEach(link => {
-      link.addEventListener('click', e => {
-        e.preventDefault();
-        const targetId = link.getAttribute('data-target');
-        sections.forEach(sec => sec.classList.remove('active'));
-        document.getElementById(targetId).classList.add('active');
-      });
-    });
+navLinks.forEach(link => {
+  link.addEventListener('click', e => {
+    e.preventDefault();
+
+    const targetId = link.getAttribute('data-target');
+
+    sections.forEach(sec => sec.classList.remove('active'));
+    const targetSection = document.getElementById(targetId);
+    targetSection.classList.add('active');
+
+    // 🔥 IMPORTANT FIX FOR MAP TAB
+    if (targetId === 'map') {
+      setTimeout(() => {
+        initMap();              // initialize map only when visible
+        map.invalidateSize(true); // recalc size to remove grey tiles
+      }, 300);
+    }
+  });
+});
 
     // Dashboard charts & updates
     function getTimeLabel() {
